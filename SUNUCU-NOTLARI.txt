@@ -1,0 +1,34 @@
+SUNUCUYA GECIS NOTLARI (simdilik kullanilmiyor, ileride icin)
+
+Uygulama su an tamamen cihazda calisir. Tum veri islemleri index.html icindeki
+`store` nesnesinden gecer. Arayuz (ekranlar) store disinda veriye dokunmaz.
+Sunucuya gecmek icin ayni yontemleri sunucuyla konusan bir `store` yazmak yeterlidir.
+
+store yontemleri (hepsi Promise doner, onChange haric):
+  onChange(fn)                    fn({users:{id:ad}, trips:[...], exps:{tripId:[...]}})
+                                  hemen bir kez ve her degisimde cagrilir (canli esitleme)
+  createUser({name, secret})      -> id           (ad benzersiz degilse reddet: code 'name_taken')
+  login(id, secret)               -> id           (yanlis sifrede reddet: code 'bad_login')
+  getSession() / setSession(id)   oturumu hatirlama (sunucuda token olur)
+  createTrip({name,currency,ownerId,memberIds}) -> tripId
+  setMembers(tripId, memberIds)
+  deleteTrip(tripId)
+  addExpense(tripId, {desc, amount(kurus), payerId, amongIds, by, at}) -> expId
+  deleteExpense(tripId, expId)
+  exportJSON() / importJSON(text) yedek (sunucuda gerekmeyebilir)
+
+Veri sekilleri:
+  trip    {id, name, currency, ownerId, memberIds:[userId], at}
+  expense {id, desc, amount, payerId, amongIds:[userId], by, at}   (amount kurus, tamsayi)
+  users   {userId: gorunenAd}   (sifre ve tuz arayuze hic verilmez)
+
+Sunucu tarafinda mutlaka yapilacaklar:
+  - Sifre dogrulamasi ve saklamasi sunucuda olmali (guvenilir hash: bcrypt/argon2).
+  - Yetki kontrolu: sadece gezi uyeleri o gezinin harcamalarini okuyup yazabilmeli;
+    harcamayi sadece ekleyen ya da gezi kurucusu silebilmeli; uye ekleme/cikarma sadece kurucu.
+    (Su an bu kurallar yalnizca arayuzde uygulaniyor, cihaz ici oldugu icin yeterli.)
+  - Kisi arama: store.onChange'in dondurdugu `users` listesinden yapiliyor. Sunucuda
+    herkesin ad listesini gondermek yerine bir arama ucu (kullanici adi/e-posta) daha dogru olur.
+
+Hazir servis kullanilacaksa (Firebase, Supabase vb.): kullanici girisi ve gercek zamanli
+veritabani hazir gelir, `store` bu servisin kutuphanesine baglanir.
