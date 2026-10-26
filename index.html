@@ -1,0 +1,1116 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#cf5468">
+<title>Gezi Hesabı</title>
+<style>
+/* Düzen: kırmızı-turuncu duvar kağıdı üstünde yüzen koyu pencereler. Üstte çip'li durum çubuğu,
+   gezi klasörleri kutucuk olarak. Tek renk dünyası (koyu); vurgu adaçayı yeşili ve gradyan kenarlık. */
+:root{
+  color-scheme:dark;
+  --wall:#cf5468;
+  --win:#2b2525; --win-2:#352e2e; --win-3:#3f3737; --pop:#1b2223; --pop-2:#262e2f;
+  --line:#463d3d; --pop-line:#364042;
+  --ink:#e2ded9; --muted:#a0969a; --sage:#8da398; --sage-d:#6f8579; --sage-ink:#17201c;
+  --good:#8fd0a4; --bad:#f2897d; --warn:#e8bb70;
+  --edge:linear-gradient(135deg,#e0489a 0%,#7fd18b 52%,#f2a24b 100%);
+  --font:"Adwaita Sans","Cantarell",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  --mono:"JetBrains Mono","DejaVu Sans Mono","SF Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{
+  margin:0; background:var(--wall); color:var(--ink);
+  font-family:var(--font); font-size:16px; line-height:1.5;
+  padding-block:10px 28px;
+  padding-left:max(12px, env(safe-area-inset-left, 0px));
+  padding-right:max(12px, env(safe-area-inset-right, 0px));
+}
+/* duvar kağıdı */
+body::before{
+  content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
+  background:
+    radial-gradient(60vmax 60vmax at 100% 0%, rgba(240,162,75,.85), transparent 60%),
+    radial-gradient(60vmax 60vmax at 0% 100%, rgba(224,72,122,.55), transparent 60%),
+    linear-gradient(120deg,#cf5468 0%,#dc6a62 55%,#e58f5c 100%);
+}
+.app{max-width:600px;margin:0 auto;display:grid;gap:12px;padding-bottom:92px}
+:focus-visible{outline:2px solid var(--sage);outline-offset:2px}
+button{font:inherit;color:inherit;cursor:pointer}
+.mono,.amt,.ramt,.tamt,.big,.stats b,.chipm{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* ---- üst çubuk (çip'ler) ---- */
+.bar{
+  display:flex;align-items:center;gap:6px;min-height:42px;padding:5px 8px;
+  background:rgba(16,12,12,.88);border-radius:14px;
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+}
+.chipm{
+  display:inline-flex;align-items:center;gap:7px;min-height:32px;padding:2px 11px;border:0;border-radius:9px;
+  background:rgba(255,255,255,.06);color:var(--ink);font-size:.8rem;line-height:1;
+}
+button.chipm:hover{background:rgba(255,255,255,.12)}
+.chipm.sage{color:var(--sage)} .chipm.warn{color:var(--warn)}
+.chipm .avatar{width:22px;height:22px;font-size:.7rem}
+.chipm .cn{max-width:11ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.spacer{flex:1}
+
+/* ---- pencereler ---- */
+.win{
+  background:var(--win);border-radius:16px;padding:16px 18px;border:1px solid var(--line);
+  box-shadow:0 8px 24px rgba(40,10,20,.28);min-width:0;
+}
+.win.focus,.win.pop{
+  border:1.5px solid transparent;
+  background:linear-gradient(var(--win),var(--win)) padding-box,var(--edge) border-box;
+}
+.win.pop{
+  background:linear-gradient(var(--pop),var(--pop)) padding-box,var(--edge) border-box;
+}
+.wh{
+  display:flex;align-items:center;gap:8px;margin:0 0 12px;
+  font-family:var(--mono);font-size:.78rem;font-weight:500;letter-spacing:.02em;color:var(--sage);text-transform:lowercase;
+}
+.wh::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--sage);flex:none}
+h2.page{margin:0 0 2px;font-size:1.6rem;font-weight:700;letter-spacing:-.02em;line-height:1.2;text-wrap:balance;overflow-wrap:anywhere}
+.lead{margin:0 0 14px}
+.muted{color:var(--muted)}
+p{margin:0 0 10px}
+.hint{color:var(--muted);font-size:.88rem;margin:8px 0 0}
+
+/* ---- formlar ---- */
+.form{display:grid;gap:6px}
+label{font-size:.82rem;font-weight:500;color:var(--muted);margin-top:10px}
+.label{display:block;margin:18px 0 6px;font-family:var(--mono);font-size:.76rem;color:var(--sage);text-transform:lowercase}
+input,select,textarea.area{
+  width:100%;min-width:0;min-height:46px;padding:9px 13px;
+  border:1px solid var(--pop-line);border-radius:10px;background:var(--pop);color:var(--ink);font:inherit;font-size:16px;
+}
+.win:not(.pop) input,.win:not(.pop) select,.win:not(.pop) textarea.area{background:var(--win-2);border-color:var(--line)}
+input::placeholder,textarea::placeholder{color:var(--muted);opacity:.8}
+textarea.area{display:none;margin-top:12px;resize:vertical;font-family:var(--mono);font-size:14px}
+.btn{
+  min-height:46px;padding:10px 20px;border:0;border-radius:10px;margin-top:18px;
+  background:var(--sage);color:var(--sage-ink);font-weight:650;
+}
+.btn:hover{background:#9bb1a6}
+.btn.full{width:100%}
+.btn.ghost{background:var(--pop-2);color:var(--ink);border:1px solid var(--pop-line);margin-top:8px;font-weight:500}
+.btn.ghost:hover{background:#2f393b}
+.btn:disabled,input:disabled,select:disabled{opacity:.5;cursor:not-allowed}
+.btn:active{transform:translateY(1px)}
+button.link{
+  border:0;background:var(--win-2);padding:8px 14px;border-radius:9px;color:var(--ink);font-size:.9rem;font-weight:500;min-height:38px;
+}
+.win.pop button.link{background:var(--pop-2)}
+button.link:hover{background:var(--win-3)}
+button.link.small{padding:3px 10px;min-height:28px;font-size:.78rem;color:var(--muted);font-weight:400;background:transparent;border:1px solid var(--line)}
+button.link.small:hover{color:var(--bad);border-color:var(--bad)}
+button.link.danger{color:var(--bad)}
+.tools{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.msg{min-height:1.3em;margin-top:8px;font-size:.9rem;color:var(--bad)}
+
+/* ---- satırlar ---- */
+ul.rows{list-style:none;margin:0;padding:0}
+.rows > li{border-top:1px solid var(--line)}
+.rows > li:first-child{border-top:0}
+li.line{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:11px 0}
+li.line.mine{color:#fff;font-weight:600}
+.rmain{display:grid;gap:2px;min-width:0}
+.rmain strong{overflow-wrap:anywhere}
+.rmain .muted{font-size:.88rem}
+.rright{display:grid;justify-items:end;gap:4px}
+.pay{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.arrow{color:var(--sage)}
+.amt{font-weight:600;white-space:nowrap;font-size:.95rem}
+.pos{color:var(--good)} .neg{color:var(--bad)} .zero{color:var(--muted)}
+
+/* ---- gezi klasörleri ---- */
+ul.tiles{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+button.tile{
+  width:100%;height:100%;display:grid;justify-items:center;align-content:start;gap:2px;text-align:center;
+  padding:14px 10px 12px;border:1px solid transparent;border-radius:14px;background:transparent;color:var(--ink);
+}
+button.tile:hover,button.tile:focus-visible{background:var(--win-2);border-color:var(--line)}
+button.tile svg{width:86px;height:70px;margin-bottom:6px}
+.tname{font-weight:600;overflow-wrap:anywhere;line-height:1.25}
+.tmeta{font-size:.78rem;color:var(--muted)}
+.tamt{display:grid;gap:0;margin-top:6px;font-size:.92rem;font-weight:600}
+.tamt small{font-family:var(--font);font-weight:400;font-size:.74rem;color:var(--muted)}
+.empty{padding:36px 0 28px;text-align:center;display:grid;justify-items:center;gap:4px}
+.empty svg{width:86px;height:70px;opacity:.55;margin-bottom:8px}
+.empty p{margin:0}
+.empty p:first-of-type{font-size:1.05rem;font-weight:600}
+
+/* ---- özet ---- */
+.hero{padding:2px 0 0}
+.hero .big{margin:2px 0 14px;font-size:1.9rem;font-weight:700;line-height:1.15;letter-spacing:-.02em;overflow-wrap:anywhere}
+.hero .label{margin:0}
+.stats{display:flex;flex-wrap:wrap;gap:8px 26px}
+.stats div{display:grid;gap:0}
+.stats .muted{font-size:.8rem}
+.stats b{font-weight:600;font-size:.95rem}
+
+/* ---- kişiler ---- */
+.stack{display:grid;gap:8px;margin-top:8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:4px 6px 4px 5px;border-radius:999px;background:var(--win-2);border:1px solid var(--line)}
+.chip .avatar{width:26px;height:26px;font-size:.78rem}
+.chip .cname{overflow-wrap:anywhere;font-size:.92rem}
+.chip .x{border:0;background:transparent;color:var(--muted);width:28px;height:28px;border-radius:50%;font-size:1.2rem;line-height:1;padding:0}
+.chip .x:hover{color:var(--bad)}
+.chip:not(:has(.x)){padding-right:12px}
+.badge{font-family:var(--mono);font-size:.66rem;color:var(--sage);border:1px solid var(--sage-d);border-radius:999px;padding:0 7px}
+.avatar{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;flex:none;color:#fff;font-weight:650;font-size:.88rem;line-height:1}
+.avatar.big{width:56px;height:56px;font-size:1.4rem}
+button.person{
+  width:100%;display:flex;align-items:center;gap:12px;text-align:left;
+  padding:7px 14px 7px 9px;min-height:50px;border:1px solid var(--pop-line);border-radius:11px;background:var(--pop-2);
+}
+.win:not(.pop) button.person{background:var(--win-2);border-color:var(--line)}
+button.person:hover{border-color:var(--sage)}
+button.person.sel{border-color:var(--sage);box-shadow:0 0 0 1px var(--sage)}
+button.person .pname{flex:1;min-width:0;overflow-wrap:anywhere}
+button.person .plus{color:var(--sage);font-family:var(--mono);font-size:.8rem}
+.checks{display:flex;flex-wrap:wrap;gap:8px}
+label.check{display:inline-flex;align-items:center;gap:8px;margin:0;min-height:42px;padding:6px 13px;border:1px solid var(--pop-line);border-radius:10px;background:var(--pop-2);color:var(--ink);font-size:.93rem;cursor:pointer}
+label.check input{width:18px;height:18px;min-height:0;margin:0;accent-color:var(--sage)}
+.acctHead{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.acctHead h2{margin:0}
+
+/* ---- sağ alttaki + düğmesi ---- */
+.fab{
+  position:fixed;z-index:5;
+  right:max(18px, calc(env(safe-area-inset-right, 0px) + 14px));
+  bottom:calc(18px + env(safe-area-inset-bottom, 0px));
+  width:58px;height:58px;border:1.5px solid transparent;border-radius:18px;color:var(--sage);
+  background:linear-gradient(var(--pop),var(--pop)) padding-box,var(--edge) border-box;
+  display:grid;place-items:center;box-shadow:0 8px 22px rgba(40,10,20,.4);
+}
+.fab:hover{color:#b5cbc0}
+.fab:active{transform:scale(.96)}
+
+.banner{padding:11px 14px;border-radius:12px;background:var(--win);border:1px solid var(--warn);color:var(--warn);font-size:.88rem}
+footer{padding:10px 14px;border-radius:12px;background:rgba(16,12,12,.82);color:var(--muted);font-size:.76rem}
+@media (prefers-reduced-motion: reduce){ .btn:active,.fab:active{transform:none} }
+
+body{padding-top:calc(10px + env(safe-area-inset-top, 0px));padding-bottom:calc(28px + env(safe-area-inset-bottom, 0px))}
+</style>
+</head>
+<body>
+<div class="app">
+  <div id="banner" class="banner" hidden></div>
+
+  <header class="bar">
+    <button type="button" class="chipm sage" id="backBtn" aria-label="Geri" hidden>← geri</button>
+    <span class="chipm sage" id="appName">gezi hesabı</span>
+    <span class="spacer"></span>
+    <button type="button" class="chipm" id="acctBtn" aria-label="Hesabım" hidden></button>
+  </header>
+
+  <main>
+    <!-- Giriş / hesap oluşturma -->
+    <section id="sc_auth" hidden>
+      <div id="authLogin" class="win pop" hidden>
+        <h2 class="page">Giriş yap</h2>
+        <p class="muted lead">Hesabını seç, şifreni yaz.</p>
+        <div class="stack" id="accountList"></div>
+        <div class="form" id="loginForm" hidden>
+          <label for="loginSecret" id="loginTitle">Şifre</label>
+          <input id="loginSecret" type="password" autocomplete="current-password" enterkeyhint="go">
+          <button type="button" class="btn full" id="loginBtn">Giriş yap</button>
+          <div class="msg" id="loginMsg"></div>
+        </div>
+        <div class="tools"><button type="button" class="link" id="toCreateBtn">Yeni hesap oluştur</button></div>
+      </div>
+
+      <div id="authCreate" class="win pop" hidden>
+        <h2 class="page">Hesap oluştur</h2>
+        <p class="muted lead" id="createHint"></p>
+        <div class="form">
+          <label for="newName">Adın</label>
+          <input id="newName" maxlength="30" autocomplete="off" placeholder="Örneğin Ayşe">
+          <label for="newSecret">Şifre</label>
+          <input id="newSecret" type="password" autocomplete="new-password" placeholder="En az 4 karakter">
+          <label for="newSecret2">Şifre tekrar</label>
+          <input id="newSecret2" type="password" autocomplete="new-password" enterkeyhint="done">
+          <button type="button" class="btn full" id="createAcctBtn">Hesap oluştur</button>
+          <div class="msg" id="createAcctMsg"></div>
+        </div>
+        <div class="tools"><button type="button" class="link" id="toLoginBtn" hidden>Mevcut hesaba giriş yap</button></div>
+      </div>
+    </section>
+
+    <!-- Gezilerim -->
+    <section id="sc_list" hidden>
+      <div class="win focus">
+        <h2 class="wh">gezilerim</h2>
+        <div id="tripList"></div>
+      </div>
+    </section>
+
+    <!-- Yeni gezi -->
+    <section id="sc_newTrip" hidden>
+      <div class="win pop">
+        <h2 class="page">Yeni gezi</h2>
+        <div class="form">
+          <label for="newTripName">Gezinin adı</label>
+          <input id="newTripName" placeholder="Bodrum hafta sonu" maxlength="50" autocomplete="off" enterkeyhint="done">
+          <label for="newTripCur">Para birimi</label>
+          <select id="newTripCur">
+            <option value="₺">₺ TL</option>
+            <option value="€">€ Euro</option>
+            <option value="$">$ Dolar</option>
+            <option value="£">£ Sterlin</option>
+          </select>
+
+          <span class="label">kişiler</span>
+          <div class="chips" id="draftChips"></div>
+          <label for="dSearch">Kişi ekle</label>
+          <input id="dSearch" placeholder="İsim yaz ve ara" autocomplete="off" enterkeyhint="search">
+          <div class="stack" id="dResults"></div>
+          <p class="hint" id="dHint"></p>
+
+          <button type="button" class="btn full" id="createTripBtn">Geziyi oluştur</button>
+          <div class="msg" id="createMsg"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Gezi -->
+    <section id="sc_trip" hidden>
+      <div class="win focus">
+        <h2 class="page" id="tripTitle"></h2>
+        <p class="muted lead mono" id="tripMeta" style="font-size:.82rem"></p>
+        <div class="hero" id="hero"></div>
+      </div>
+
+      <div class="win">
+        <h3 class="wh">ödemeler</h3>
+        <div id="settle"></div>
+      </div>
+
+      <div class="win">
+        <h3 class="wh">harcamalar</h3>
+        <div id="expenses"></div>
+      </div>
+
+      <div class="win">
+        <h3 class="wh">kişiler</h3>
+        <div class="chips" id="members"></div>
+        <div class="tools"><button type="button" class="link" id="addToggle" hidden>+ Kişi ekle</button></div>
+        <div id="addMemberBox" class="form" hidden>
+          <label for="memberSearch">Kişi ekle</label>
+          <input id="memberSearch" placeholder="İsim yaz ve ara" autocomplete="off" enterkeyhint="search">
+          <div class="stack" id="memberResults"></div>
+          <p class="hint" id="memberHint"></p>
+        </div>
+        <div class="msg" id="memberMsg"></div>
+      </div>
+
+      <div class="win">
+        <h3 class="wh">kim ne durumda</h3>
+        <div id="balances"></div>
+      </div>
+
+      <div class="win">
+        <div class="tools" style="margin-top:0">
+          <button class="link" id="copyBtn" type="button">Özeti kopyala</button>
+          <button class="link" id="leaveBtn" type="button" hidden>Geziden ayrıl</button>
+          <button class="link danger" id="deleteTripBtn" type="button" hidden>Geziyi sil</button>
+        </div>
+        <div class="msg" id="toolMsg"></div>
+        <textarea id="copyOut" class="area" readonly rows="6"></textarea>
+      </div>
+    </section>
+
+    <!-- Yeni harcama -->
+    <section id="sc_newExp" hidden>
+      <div class="win pop">
+        <h2 class="page">Yeni harcama</h2>
+        <p class="muted lead" id="expTripName"></p>
+        <div class="form">
+          <label for="desc">Ne için?</label>
+          <input id="desc" placeholder="Akşam yemeği, benzin, otel" maxlength="60" autocomplete="off">
+          <label for="amount">Tutar</label>
+          <input id="amount" inputmode="decimal" placeholder="0,00" autocomplete="off">
+          <label for="payer">Kim ödedi?</label>
+          <select id="payer"></select>
+          <span class="label">kimler arasında bölünsün?</span>
+          <div class="checks" id="among"></div>
+          <button type="button" class="btn full" id="addExpenseBtn">Harcamayı ekle</button>
+          <div class="msg" id="expMsg"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Hesabım -->
+    <section id="sc_acct" hidden>
+      <div class="win focus">
+        <div class="acctHead"><span id="acctAvatar"></span><h2 class="page" id="acctName"></h2></div>
+        <button type="button" class="btn ghost" id="logoutBtn" style="margin-top:0">Çıkış yap</button>
+      </div>
+      <div class="win">
+        <h3 class="wh">yedek</h3>
+        <p class="muted">Veriler bu cihazda saklanır. Tarayıcı verilerini silersen ya da telefon değiştirirsen kaybolur, bu yüzden arada yedek al.</p>
+        <div class="tools" style="margin-top:8px">
+          <button type="button" class="link" id="backupShowBtn">Yedeği göster</button>
+          <button type="button" class="link" id="backupLoadBtn">Yedekten yükle</button>
+        </div>
+        <textarea id="backupBox" class="area" rows="6" placeholder="Yedek metni burada görünür. Yüklemek için yedek metnini buraya yapıştır."></textarea>
+        <div class="msg muted" id="backupMsg"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>Hesaplar ve geziler yalnızca bu cihazda saklanır, hiçbir sunucuya gönderilmez. Şifre, cihazı paylaştığın kişilerin hesabını kurcalamasını zorlaştırır ama kesin güvenlik değildir.</footer>
+
+  <button type="button" class="fab" id="fab" aria-label="Yeni gezi ekle" hidden><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg></button>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  /* =====================================================================
+     VERİ KATMANI
+     Arayüz yalnızca aşağıdaki `store` nesnesinin yöntemlerini kullanır.
+     Sunucuya geçerken bu nesnenin aynı yöntemleri sunucuyla konuşan bir
+     sürümü yazılır (SUNUCU-NOTLARI.txt dosyasına bak); arayüze
+     dokunmak gerekmez. Tüm yazma yöntemleri Promise döndürür.
+     ===================================================================== */
+  function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2, 9); }
+  function trLower(s){ return String(s || '').toLocaleLowerCase('tr'); }
+
+  function cyrb53(str){
+    var h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+    for(var i = 0; i < str.length; i++){
+      var ch = str.charCodeAt(i);
+      h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16);
+  }
+  function hashSecret(salt, secret){
+    var data = salt + ':' + secret;
+    if(window.crypto && window.crypto.subtle && window.TextEncoder){
+      return window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(data)).then(function(buf){
+        return 's:' + Array.prototype.map.call(new Uint8Array(buf), function(b){ return ('0' + b.toString(16)).slice(-2); }).join('');
+      });
+    }
+    return Promise.resolve('w:' + cyrb53(data));
+  }
+
+  var store = (function(){
+    var KEY = 'gezi-v2', SKEY = 'gezi-oturum';
+    var persistent = true, mem = null, memSession = null, listeners = [];
+    try{ localStorage.setItem('__gezi_t', '1'); localStorage.removeItem('__gezi_t'); }catch(e){ persistent = false; }
+
+    function empty(){ return {users:{}, trips:{}, exps:{}}; }
+    function read(){
+      if(!persistent) return mem || (mem = empty());
+      try{
+        var d = JSON.parse(localStorage.getItem(KEY));
+        if(d && d.users && d.trips && d.exps) return d;
+      }catch(e){}
+      return empty();
+    }
+    function write(d){
+      if(persistent){
+        try{ localStorage.setItem(KEY, JSON.stringify(d)); }catch(e){ persistent = false; mem = d; }
+      }else{ mem = d; }
+      emit();
+    }
+    function snapshot(){
+      var d = read(), users = {}, trips = [], exps = {};
+      Object.keys(d.users).forEach(function(id){ users[id] = d.users[id].name; });
+      Object.keys(d.trips).forEach(function(id){ trips.push(Object.assign({}, d.trips[id], {id:id})); });
+      Object.keys(d.exps).forEach(function(tid){
+        exps[tid] = Object.keys(d.exps[tid]).map(function(eid){ return Object.assign({}, d.exps[tid][eid], {id:eid}); });
+      });
+      return {users:users, trips:trips, exps:exps};
+    }
+    function emit(){ var s = snapshot(); listeners.slice().forEach(function(fn){ fn(s); }); }
+    window.addEventListener('storage', function(e){ if(e.key === KEY) emit(); });
+    function fail(code){ return Promise.reject({code:code}); }
+
+    return {
+      isPersistent:function(){ return persistent; },
+      /* değişiklikleri dinle; hemen bir kez de çağrılır */
+      onChange:function(fn){ listeners.push(fn); fn(snapshot()); },
+
+      /* -- hesaplar -- */
+      createUser:function(o){
+        var name = String(o.name || '').replace(/\s+/g, ' ').trim();
+        var d = read();
+        var taken = Object.keys(d.users).some(function(id){ return trLower(d.users[id].name) === trLower(name); });
+        if(taken) return fail('name_taken');
+        var salt = uid();
+        return hashSecret(salt, o.secret).then(function(h){
+          var d2 = read(), id = uid();
+          d2.users[id] = {name:name, salt:salt, hash:h, at:Date.now()};
+          write(d2);
+          return id;
+        });
+      },
+      login:function(id, secret){
+        var u = read().users[id];
+        if(!u) return fail('bad_login');
+        return hashSecret(u.salt, secret).then(function(h){
+          if(h !== u.hash) return fail('bad_login');
+          return id;
+        });
+      },
+      getSession:function(){
+        if(!persistent) return memSession;
+        try{ return localStorage.getItem(SKEY); }catch(e){ return memSession; }
+      },
+      setSession:function(id){
+        memSession = id;
+        if(!persistent) return;
+        try{ if(id) localStorage.setItem(SKEY, id); else localStorage.removeItem(SKEY); }catch(e){}
+      },
+
+      /* -- geziler -- */
+      createTrip:function(o){
+        var d = read(), id = uid();
+        var members = [o.ownerId];
+        (o.memberIds || []).forEach(function(m){ if(members.indexOf(m) === -1 && d.users[m]) members.push(m); });
+        d.trips[id] = {name:o.name, currency:o.currency, ownerId:o.ownerId, memberIds:members, at:Date.now()};
+        d.exps[id] = {};
+        write(d);
+        return Promise.resolve(id);
+      },
+      setMembers:function(tripId, ids){
+        var d = read();
+        if(!d.trips[tripId]) return fail('not_found');
+        d.trips[tripId].memberIds = ids.slice();
+        write(d);
+        return Promise.resolve();
+      },
+      deleteTrip:function(tripId){
+        var d = read();
+        delete d.trips[tripId]; delete d.exps[tripId];
+        write(d);
+        return Promise.resolve();
+      },
+
+      /* -- harcamalar -- */
+      addExpense:function(tripId, e){
+        var d = read(), id = uid();
+        if(!d.trips[tripId]) return fail('not_found');
+        if(!d.exps[tripId]) d.exps[tripId] = {};
+        d.exps[tripId][id] = e;
+        write(d);
+        return Promise.resolve(id);
+      },
+      deleteExpense:function(tripId, eid){
+        var d = read();
+        if(d.exps[tripId]) delete d.exps[tripId][eid];
+        write(d);
+        return Promise.resolve();
+      },
+
+      /* -- yedek -- */
+      exportJSON:function(){ return JSON.stringify({gezi:2, data:read()}); },
+      importJSON:function(text){
+        var o;
+        try{ o = JSON.parse(text); }catch(e){ return fail('bad_backup'); }
+        var d = o && o.gezi === 2 && o.data;
+        if(!d || typeof d.users !== 'object' || typeof d.trips !== 'object' || typeof d.exps !== 'object') return fail('bad_backup');
+        write({users:d.users, trips:d.trips, exps:d.exps});
+        return Promise.resolve();
+      }
+    };
+  })();
+
+
+  /* =====================================================================
+     ARAYÜZ
+     Ekranlar: auth (giriş/kayıt) · list (gezilerim) · newTrip · trip ·
+     newExp (yeni harcama) · acct (hesap ve yedek)
+     ===================================================================== */
+  var S = {
+    users:{}, trips:[], exps:{}, myId:null,
+    screen:'list', view:null, authMode:'login', selAcct:null,
+    draft:[], dq:'', q:'', showAdd:false, busy:{}, lastTrip:null
+  };
+  var MIN_SECRET = 4;
+  var SCREENS = ['auth','list','newTrip','trip','newExp','acct'];
+
+  function $(id){ return document.getElementById(id); }
+  function esc(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  function money(cents, cur){
+    var n = (Math.abs(cents)/100).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2});
+    return n + ' ' + (cur || '₺');
+  }
+  function setMsg(id, text){ var el = $(id); if(el) el.textContent = text || ''; }
+  function rawName(id){ return S.users[id] || 'Silinmiş kişi'; }
+  function nameOf(id){ return rawName(id) + (id === S.myId ? ' (sen)' : ''); }
+  function shortName(id){ return id === S.myId ? 'Sen' : rawName(id); }
+  function avatarOf(id, big){
+    var h = 0, s = String(id);
+    for(var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360;
+    var ch = (rawName(id).charAt(0) || '?').toLocaleUpperCase('tr');
+    return '<span class="avatar' + (big ? ' big' : '') + '" style="background:hsl(' + h + ' 45% 36%)">' + esc(ch) + '</span>';
+  }
+  function byName(a, b){ return rawName(a).localeCompare(rawName(b), 'tr'); }
+
+  /* "1.234,50", "1234,5", "12.5", "300" yazımlarını kuruşa çevirir */
+  function parseAmount(s){
+    s = String(s).trim().replace(/\s/g,'');
+    if(/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)) s = s.replace(/\./g,'').replace(',','.');
+    else s = s.replace(',','.');
+    if(!/^(\d+(\.\d*)?|\.\d+)$/.test(s)) return NaN;
+    return Math.round(parseFloat(s)*100);
+  }
+
+  /* ---------- Hesaplama ---------- */
+  function tripExps(t){ return S.exps[t.id] || []; }
+
+  function stats(t){
+    var ids = {};
+    (t.memberIds || []).forEach(function(i){ ids[i] = 1; });
+    var paid = {}, share = {}, total = 0;
+    tripExps(t).forEach(function(e){
+      var among = e.amongIds || [], n = among.length;
+      if(!n || !(e.amount > 0)) return;
+      total += e.amount;
+      ids[e.payerId] = 1;
+      paid[e.payerId] = (paid[e.payerId] || 0) + e.amount;
+      var base = Math.floor(e.amount / n), rem = e.amount - base * n;
+      among.forEach(function(id, i){
+        ids[id] = 1;
+        share[id] = (share[id] || 0) + base + (i < rem ? 1 : 0);
+      });
+    });
+    var net = {};
+    Object.keys(ids).forEach(function(id){ net[id] = (paid[id] || 0) - (share[id] || 0); });
+    return {net:net, paid:paid, share:share, total:total};
+  }
+
+  /* Eşitlikler kimliğe göre kırılır: her ekranda aynı öneri çıkar */
+  function settlements(net){
+    var cred = [], debt = [];
+    Object.keys(net).forEach(function(id){
+      if(net[id] > 0) cred.push({id:id, v:net[id]});
+      else if(net[id] < 0) debt.push({id:id, v:-net[id]});
+    });
+    function cmp(a, b){ return (b.v - a.v) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0); }
+    var out = [];
+    while(cred.length && debt.length){
+      cred.sort(cmp); debt.sort(cmp);
+      var c = cred[0], d = debt[0], x = Math.min(c.v, d.v);
+      out.push({from:d.id, to:c.id, amount:x});
+      c.v -= x; d.v -= x;
+      if(c.v === 0) cred.shift();
+      if(d.v === 0) debt.shift();
+    }
+    return out;
+  }
+
+  function myTrips(){
+    return S.trips.filter(function(t){ return (t.memberIds || []).indexOf(S.myId) !== -1; });
+  }
+  function curTrip(){
+    if(!S.view) return null;
+    var l = myTrips();
+    for(var i = 0; i < l.length; i++) if(l[i].id === S.view) return l[i];
+    return null;
+  }
+  function usedInExpenses(t, id){
+    return tripExps(t).some(function(e){ return e.payerId === id || (e.amongIds || []).indexOf(id) !== -1; });
+  }
+  /* Eklenebilecek hesaplar: bu cihazdakiler, zaten seçilenler hariç, isme göre süzülmüş */
+  function candidates(exclude, q){
+    q = trLower(String(q || '').trim());
+    return Object.keys(S.users).filter(function(id){
+      return exclude.indexOf(id) === -1 && (!q || trLower(S.users[id]).indexOf(q) !== -1);
+    }).sort(byName).slice(0, 8);
+  }
+  function personRows(ids, attr){
+    return ids.map(function(id){
+      return '<button type="button" class="person" ' + attr + '="' + esc(id) + '">' + avatarOf(id) +
+        '<span class="pname">' + esc(S.users[id]) + '</span><span class="plus">Ekle</span></button>';
+    }).join('');
+  }
+  function chipHtml(id, removeAttr, extra){
+    return '<span class="chip">' + avatarOf(id) + '<span class="cname">' + esc(nameOf(id)) + '</span>' + (extra || '') +
+      (removeAttr ? '<button type="button" class="x" ' + removeAttr + '="' + esc(id) + '" aria-label="Çıkar">×</button>' : '') + '</span>';
+  }
+
+  /* ---------- Gezinme ---------- */
+  function go(screen, tripId){
+    S.screen = screen;
+    if(tripId !== undefined) S.view = tripId;
+    if(screen === 'list'){ S.view = null; S.lastTrip = null; }
+    if(screen === 'newTrip'){
+      S.draft = []; S.dq = '';
+      $('newTripName').value = ''; $('dSearch').value = ''; setMsg('createMsg','');
+    }
+    if(screen === 'newExp'){
+      $('desc').value = ''; $('amount').value = ''; setMsg('expMsg','');
+      $('among').innerHTML = '';
+    }
+    if(screen === 'trip'){ S.showAdd = false; }
+    try{ window.scrollTo(0, 0); }catch(e){}
+    renderAll();
+  }
+
+  /* ---------- Çizim ---------- */
+  var pending = false;
+  function renderAll(){
+    if(pending) return;
+    pending = true;
+    Promise.resolve().then(function(){ pending = false; doRender(); });
+  }
+
+  function doRender(){
+    var loggedIn = !!(S.myId && S.users[S.myId]);
+    if(!loggedIn) S.screen = 'auth';
+    else if(S.screen === 'auth') S.screen = 'list';
+    var t = curTrip();
+    if((S.screen === 'trip' || S.screen === 'newExp') && !t){ S.screen = 'list'; S.view = null; }
+    var sc = S.screen;
+
+    SCREENS.forEach(function(k){ $('sc_' + k).hidden = (k !== sc); });
+    $('backBtn').hidden = !(sc === 'newTrip' || sc === 'trip' || sc === 'newExp' || sc === 'acct');
+    $('acctBtn').hidden = !loggedIn;
+    if(loggedIn) $('acctBtn').innerHTML = avatarOf(S.myId) + '<span class="cn">' + esc(S.users[S.myId]) + '</span>';
+    $('appName').hidden = (sc !== 'list' && sc !== 'auth');
+
+    var fab = $('fab');
+    fab.hidden = !(sc === 'list' || sc === 'trip');
+    fab.setAttribute('aria-label', sc === 'trip' ? 'Harcama ekle' : 'Yeni gezi ekle');
+
+    var banner = $('banner');
+    banner.hidden = store.isPersistent();
+    if(!store.isPersistent()){
+      banner.textContent = 'Bu tarayıcı veri saklamaya izin vermiyor. Girdiklerin sayfayı kapatınca kaybolur. Kalıcı olması için uygulamayı normal bir tarayıcıda ya da APK olarak aç.';
+    }
+
+    if(sc === 'auth') renderAuth();
+    else if(sc === 'list') renderList();
+    else if(sc === 'newTrip') renderNewTrip();
+    else if(sc === 'trip') renderTrip(t);
+    else if(sc === 'newExp') renderNewExp(t);
+    else if(sc === 'acct') renderAcct();
+  }
+
+  function renderAuth(){
+    var ids = Object.keys(S.users).sort(byName);
+    if(S.selAcct && !S.users[S.selAcct]) S.selAcct = null;
+    var mode = ids.length ? S.authMode : 'create';
+    $('authLogin').hidden = mode !== 'login';
+    $('authCreate').hidden = mode !== 'create';
+    $('toLoginBtn').hidden = !ids.length;
+    $('accountList').innerHTML = ids.map(function(id){
+      return '<button type="button" class="person' + (id === S.selAcct ? ' sel' : '') + '" data-acct="' + esc(id) + '">' +
+        avatarOf(id) + '<span class="pname">' + esc(S.users[id]) + '</span></button>';
+    }).join('');
+    $('loginForm').hidden = !S.selAcct;
+    $('loginTitle').textContent = S.selAcct ? (S.users[S.selAcct] + ' için şifre') : '';
+    $('createHint').textContent = ids.length
+      ? 'Bu cihazda ' + ids.length + ' hesap var. Arkadaşların da kendi hesabını burada açabilir.'
+      : 'Henüz hesap yok. İlk hesabı sen aç, arkadaşların da aynı cihazda kendi hesabını açabilir.';
+  }
+
+  var FOLDER = '<svg viewBox="0 0 88 72" aria-hidden="true"><path d="M6 14a6 6 0 0 1 6-6h19l8 8h37a6 6 0 0 1 6 6v8H6z" fill="#7a9186"/><rect x="4" y="22" width="80" height="44" rx="7" fill="#8da398"/><rect x="4" y="22" width="80" height="9" rx="4.5" fill="#a3b8ad" opacity=".55"/><path d="M30 50h28" stroke="#5f7468" stroke-width="3" stroke-linecap="round" opacity=".7"/></svg>';
+
+  function renderList(){
+    var list = myTrips().sort(function(a, b){ return (b.at || 0) - (a.at || 0); });
+    var box = $('tripList');
+    if(!list.length){
+      box.innerHTML = '<div class="empty">' + FOLDER + '<p>Henüz gezin yok.</p><p class="muted">Başlamak için sağ alttaki + düğmesine bas.</p></div>';
+      return;
+    }
+    box.innerHTML = '<ul class="tiles">' + list.map(function(t){
+      var st = stats(t), net = st.net[S.myId] || 0;
+      var cls = net > 0 ? 'pos' : net < 0 ? 'neg' : 'zero';
+      var amt = net !== 0 ? money(net, t.currency) : (st.total ? 'Kapalı' : '—');
+      var lab = net > 0 ? 'alacaklı' : net < 0 ? 'borçlu' : '';
+      return '<li><button type="button" class="tile" data-open="' + esc(t.id) + '">' + FOLDER +
+        '<span class="tname">' + esc(t.name) + '</span>' +
+        '<span class="tmeta">' + (t.memberIds || []).length + ' kişi · toplam ' + money(st.total, t.currency) + '</span>' +
+        '<span class="tamt ' + cls + '">' + esc(amt) + (lab ? '<small>' + lab + '</small>' : '') + '</span></button></li>';
+    }).join('') + '</ul>';
+  }
+
+  function renderNewTrip(){
+    var ids = [S.myId].concat(S.draft);
+    $('draftChips').innerHTML = ids.map(function(id){
+      return chipHtml(id, id === S.myId ? '' : 'data-draft-del');
+    }).join('');
+    var cands = candidates(ids, S.dq);
+    $('dResults').innerHTML = personRows(cands, 'data-draft-add');
+    var others = Object.keys(S.users).length - 1;
+    var hint = '';
+    if(!others) hint = 'Bu cihazda başka hesap yok. Arkadaşın hesap açınca gezine ekleyebilirsin. Şimdilik tek başına da oluşturabilirsin.';
+    else if(!cands.length) hint = S.dq.trim() ? 'Bu isimde hesap bulunamadı.' : 'Eklenebilecek başka hesap kalmadı.';
+    $('dHint').textContent = hint;
+    $('createTripBtn').disabled = !!S.busy.create;
+  }
+
+  function renderTrip(t){
+    var cur = t.currency || '₺';
+    var isOwner = t.ownerId === S.myId;
+    var members = t.memberIds || [];
+    var st = stats(t), my = st.net[S.myId] || 0;
+
+    if(S.lastTrip !== t.id){
+      S.lastTrip = t.id; S.q = '';
+      $('memberSearch').value = ''; setMsg('memberMsg',''); setMsg('toolMsg','');
+      $('copyOut').style.display = 'none';
+    }
+    $('tripTitle').textContent = t.name;
+    $('tripMeta').textContent = members.length + ' kişi · ' + cur;
+
+    var big = my > 0 ? money(my, cur) + ' alacaklısın' : my < 0 ? money(my, cur) + ' borçlusun' : (st.total ? 'Hesabın kapalı' : 'Henüz harcama yok');
+    $('hero').innerHTML =
+      '<span class="label">Senin durumun</span>' +
+      '<div class="big ' + (my > 0 ? 'pos' : my < 0 ? 'neg' : '') + '">' + esc(big) + '</div>' +
+      '<div class="stats">' +
+        '<div><span class="muted">Toplam</span><b>' + money(st.total, cur) + '</b></div>' +
+        '<div><span class="muted">Ödediğin</span><b>' + money(st.paid[S.myId] || 0, cur) + '</b></div>' +
+        '<div><span class="muted">Payın</span><b>' + money(st.share[S.myId] || 0, cur) + '</b></div>' +
+      '</div>';
+
+    var sets = settlements(st.net).sort(function(a, b){
+      var am = (a.from === S.myId || a.to === S.myId) ? 0 : 1;
+      var bm = (b.from === S.myId || b.to === S.myId) ? 0 : 1;
+      return am - bm;
+    });
+    if(!tripExps(t).length){
+      $('settle').innerHTML = '<p class="muted">Harcama girince ödemeler burada görünür.</p>';
+    }else if(!sets.length){
+      $('settle').innerHTML = '<p class="muted">Kimsenin kimseye borcu yok.</p>';
+    }else{
+      $('settle').innerHTML = '<ul class="rows">' + sets.map(function(s){
+        var mine = s.from === S.myId || s.to === S.myId;
+        return '<li class="line' + (mine ? ' mine' : '') + '"><span class="pay"><strong>' + esc(shortName(s.from)) + '</strong><span class="arrow">→</span><strong>' + esc(shortName(s.to)) + '</strong></span>' +
+          '<span class="amt">' + money(s.amount, cur) + '</span></li>';
+      }).join('') + '</ul>';
+    }
+
+    var list = tripExps(t).slice().sort(function(a, b){ return (b.at || 0) - (a.at || 0); });
+    if(!list.length){
+      $('expenses').innerHTML = '<p class="muted">Henüz harcama yok. Sağ alttaki + ile ekle.</p>';
+    }else{
+      $('expenses').innerHTML = '<ul class="rows">' + list.map(function(e){
+        var among = e.amongIds || [];
+        var who = among.length === members.length ? 'herkes' : among.map(shortName).join(', ');
+        var canDel = e.by === S.myId || isOwner;
+        return '<li class="line"><div class="rmain"><strong>' + esc(e.desc) + '</strong>' +
+          '<span class="muted">' + esc(shortName(e.payerId)) + ' ödedi · ' + esc(who) + '</span></div>' +
+          '<div class="rright"><span class="amt">' + money(e.amount, cur) + '</span>' +
+          (canDel ? '<button class="link small" type="button" data-del-exp="' + esc(e.id) + '">Sil</button>' : '') + '</div></li>';
+      }).join('') + '</ul>';
+    }
+
+    $('members').innerHTML = members.map(function(id){
+      var canRemove = isOwner && id !== S.myId && !usedInExpenses(t, id);
+      return chipHtml(id, canRemove ? 'data-del-member' : '', id === t.ownerId ? '<span class="badge">kurucu</span>' : '');
+    }).join('');
+    $('addToggle').hidden = !isOwner || S.showAdd;
+    $('addMemberBox').hidden = !isOwner || !S.showAdd;
+    if(isOwner && S.showAdd){
+      var cands = candidates(members, S.q);
+      $('memberResults').innerHTML = personRows(cands, 'data-add-member');
+      $('memberHint').textContent = cands.length ? '' :
+        (S.q.trim() ? 'Bu isimde hesap bulunamadı. Arkadaşının önce bu cihazda hesap açması gerekir.' : 'Eklenebilecek başka hesap yok.');
+    }
+
+    var ids = Object.keys(st.net).sort(function(a, b){ return a === S.myId ? -1 : b === S.myId ? 1 : byName(a, b); });
+    $('balances').innerHTML = '<ul class="rows">' + ids.map(function(id){
+      var v = st.net[id] || 0;
+      var cls = v > 0 ? 'pos' : v < 0 ? 'neg' : 'muted';
+      var txt = v > 0 ? money(v, cur) + ' alacaklı' : v < 0 ? money(v, cur) + ' borçlu' : 'Hesabı kapalı';
+      return '<li class="line"><strong>' + esc(nameOf(id)) + '</strong><span class="amt ' + cls + '">' + esc(txt) + '</span></li>';
+    }).join('') + '</ul>';
+
+    $('leaveBtn').hidden = isOwner;
+    $('deleteTripBtn').hidden = !isOwner;
+  }
+
+  function renderNewExp(t){
+    var members = t.memberIds || [];
+    $('expTripName').textContent = t.name;
+    var paySel = $('payer'), prev = paySel.value;
+    paySel.innerHTML = members.map(function(id){
+      return '<option value="' + esc(id) + '">' + esc(nameOf(id)) + '</option>';
+    }).join('');
+    if(prev && members.indexOf(prev) !== -1) paySel.value = prev;
+    else if(members.indexOf(S.myId) !== -1) paySel.value = S.myId;
+
+    var checked = {};
+    document.querySelectorAll('#among input').forEach(function(i){ checked[i.value] = i.checked; });
+    $('among').innerHTML = members.map(function(id){
+      var on = (id in checked) ? checked[id] : true;
+      return '<label class="check"><input type="checkbox" value="' + esc(id) + '"' + (on ? ' checked' : '') + '><span>' + esc(shortName(id)) + '</span></label>';
+    }).join('');
+    $('addExpenseBtn').disabled = !!S.busy.expense;
+  }
+
+  function renderAcct(){
+    $('acctName').textContent = S.users[S.myId] || '';
+    $('acctAvatar').innerHTML = avatarOf(S.myId, true);
+  }
+
+  /* ---------- Eylemler ---------- */
+  function startSession(id){
+    S.myId = id; S.selAcct = null; S.authMode = 'login';
+    store.setSession(id);
+    go('list');
+  }
+  function logout(){
+    S.myId = null; S.view = null; S.lastTrip = null; S.selAcct = null; S.authMode = 'login';
+    store.setSession(null);
+    ['loginSecret','newName','newSecret','newSecret2'].forEach(function(i){ $(i).value = ''; });
+    ['loginMsg','createAcctMsg'].forEach(function(i){ setMsg(i, ''); });
+    renderAll();
+  }
+
+  function createAccount(){
+    setMsg('createAcctMsg','');
+    var name = $('newName').value.replace(/\s+/g, ' ').trim();
+    var s1 = $('newSecret').value, s2 = $('newSecret2').value;
+    if(name.length < 2){ setMsg('createAcctMsg','Adını yaz (en az 2 harf).'); return; }
+    if(s1.length < MIN_SECRET){ setMsg('createAcctMsg','Şifre en az ' + MIN_SECRET + ' karakter olmalı.'); return; }
+    if(s1 !== s2){ setMsg('createAcctMsg','İki şifre aynı değil.'); return; }
+    if(S.busy.acct) return;
+    S.busy.acct = true;
+    store.createUser({name:name, secret:s1}).then(function(id){
+      ['newName','newSecret','newSecret2'].forEach(function(i){ $(i).value = ''; });
+      startSession(id);
+    }).catch(function(e){
+      setMsg('createAcctMsg', e && e.code === 'name_taken'
+        ? 'Bu isimde bir hesap zaten var. Farklı bir isim yaz ya da o hesaba giriş yap.'
+        : 'Hesap açılamadı. Tekrar dene.');
+    }).then(function(){ S.busy.acct = false; });
+  }
+
+  function login(){
+    setMsg('loginMsg','');
+    if(!S.selAcct) return;
+    var secret = $('loginSecret').value;
+    if(!secret){ setMsg('loginMsg','Şifreni yaz.'); return; }
+    store.login(S.selAcct, secret).then(function(id){
+      $('loginSecret').value = '';
+      startSession(id);
+    }).catch(function(){
+      setMsg('loginMsg','Şifre yanlış.');
+      $('loginSecret').select();
+    });
+  }
+
+  function createTrip(){
+    setMsg('createMsg','');
+    var name = $('newTripName').value.trim();
+    if(!name){ setMsg('createMsg','Gezinin adını yaz.'); return; }
+    if(S.busy.create) return;
+    S.busy.create = true; renderAll();
+    store.createTrip({name:name, currency:$('newTripCur').value, ownerId:S.myId, memberIds:S.draft}).then(function(id){
+      S.busy.create = false;
+      go('trip', id);
+    }).catch(function(){
+      S.busy.create = false;
+      setMsg('createMsg','Kaydedilemedi. Tekrar dene.'); renderAll();
+    });
+  }
+
+  function addExpense(){
+    var t = curTrip(); if(!t || S.busy.expense) return;
+    setMsg('expMsg','');
+    var desc = $('desc').value.trim();
+    var amount = parseAmount($('amount').value);
+    var payer = $('payer').value;
+    var among = Array.prototype.slice.call(document.querySelectorAll('#among input:checked')).map(function(i){ return i.value; });
+    var members = t.memberIds || [];
+    if(members.length < 2){ setMsg('expMsg','Önce geziye en az bir kişi daha ekle.'); return; }
+    if(!desc){ setMsg('expMsg','Harcamanın ne için olduğunu yaz.'); return; }
+    if(!isFinite(amount) || amount <= 0){ setMsg('expMsg','Geçerli bir tutar gir.'); return; }
+    if(members.indexOf(payer) === -1){ setMsg('expMsg','Ödeyen kişiyi seç.'); return; }
+    if(!among.length){ setMsg('expMsg','Bölüşülecek en az bir kişi seç.'); return; }
+    S.busy.expense = true; renderAll();
+    store.addExpense(t.id, {desc:desc, amount:amount, payerId:payer, amongIds:among, by:S.myId, at:Date.now()}).then(function(){
+      S.busy.expense = false;
+      go('trip', t.id);
+    }).catch(function(){
+      S.busy.expense = false;
+      setMsg('expMsg','Kaydedilemedi. Tekrar dene.'); renderAll();
+    });
+  }
+
+  function addMember(id){
+    var t = curTrip(); if(!t || t.ownerId !== S.myId) return;
+    var members = (t.memberIds || []).slice();
+    if(members.indexOf(id) !== -1) return;
+    members.push(id);
+    setMsg('memberMsg','');
+    store.setMembers(t.id, members).then(function(){
+      S.q = ''; $('memberSearch').value = '';
+    }).catch(function(){ setMsg('memberMsg','Kaydedilemedi. Tekrar dene.'); });
+  }
+
+  function removeMember(id, selfLeave){
+    var t = curTrip(); if(!t) return;
+    if(usedInExpenses(t, id)){ setMsg(selfLeave ? 'toolMsg' : 'memberMsg','Bu kişi harcamalarda geçiyor. Önce o harcamaları sil.'); return; }
+    var members = (t.memberIds || []).filter(function(m){ return m !== id; });
+    store.setMembers(t.id, members).then(function(){
+      if(selfLeave) go('list');
+    }).catch(function(){ setMsg(selfLeave ? 'toolMsg' : 'memberMsg','Kaydedilemedi. Tekrar dene.'); });
+  }
+
+  function deleteExpense(eid){
+    var t = curTrip(); if(!t) return;
+    store.deleteExpense(t.id, eid).catch(function(){ setMsg('toolMsg','Silinemedi. Tekrar dene.'); });
+  }
+
+  function deleteTrip(){
+    var t = curTrip(); if(!t || t.ownerId !== S.myId) return;
+    store.deleteTrip(t.id).then(function(){ go('list'); })
+      .catch(function(){ setMsg('toolMsg','Silinemedi. Tekrar dene.'); });
+  }
+
+  var armed = {};
+  function confirmTwice(key, btn, label, askLabel, run){
+    if(!armed[key]){
+      btn.textContent = askLabel;
+      armed[key] = setTimeout(function(){ armed[key] = null; btn.textContent = label; }, 4000);
+      return;
+    }
+    clearTimeout(armed[key]); armed[key] = null; btn.textContent = label;
+    run();
+  }
+
+  function copySummary(){
+    var t = curTrip(); if(!t) return;
+    var st = stats(t), cur = t.currency || '₺';
+    var lines = [t.name, 'Toplam harcama: ' + money(st.total, cur), '', 'Ödemeler:'];
+    var sets = settlements(st.net);
+    if(!sets.length) lines.push('Kimsenin borcu yok.');
+    sets.forEach(function(s){ lines.push(rawName(s.from) + ' → ' + rawName(s.to) + ': ' + money(s.amount, cur)); });
+    var text = lines.join('\n'), btn = $('copyBtn');
+    function done(){ btn.textContent = 'Kopyalandı ✓'; setTimeout(function(){ btn.textContent = 'Özeti kopyala'; }, 1500); }
+    function fallback(){ var o = $('copyOut'); o.style.display = 'block'; o.value = text; o.focus(); o.select(); }
+    try{
+      if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback);
+      else fallback();
+    }catch(e){ fallback(); }
+  }
+
+  function showBackup(){
+    var o = $('backupBox');
+    o.style.display = 'block'; o.value = store.exportJSON();
+    o.focus(); o.select();
+    setMsg('backupMsg','Bu metni kopyalayıp güvenli bir yere (kendine mesaj, not uygulaması) yapıştır.');
+  }
+  function restoreBackup(){
+    var text = $('backupBox').value.trim();
+    if(!text){ setMsg('backupMsg','Önce yedek metnini kutuya yapıştır.'); return; }
+    store.importJSON(text).then(function(){
+      setMsg('backupMsg','Yedek yüklendi.');
+      $('backupBox').value = '';
+    }).catch(function(){ setMsg('backupMsg','Bu metin geçerli bir yedek değil.'); });
+  }
+
+  /* ---------- Olaylar ---------- */
+  function onEnter(id, fn){
+    $(id).addEventListener('keydown', function(ev){ if(ev.key === 'Enter'){ ev.preventDefault(); fn(); } });
+  }
+  function bindEvents(){
+    $('accountList').addEventListener('click', function(ev){
+      var b = ev.target.closest('[data-acct]'); if(!b) return;
+      S.selAcct = b.getAttribute('data-acct');
+      setMsg('loginMsg',''); $('loginSecret').value = '';
+      renderAll();
+      setTimeout(function(){ try{ $('loginSecret').focus(); }catch(e){} }, 30);
+    });
+    $('loginBtn').addEventListener('click', login); onEnter('loginSecret', login);
+    $('toCreateBtn').addEventListener('click', function(){ S.authMode = 'create'; renderAll(); });
+    $('toLoginBtn').addEventListener('click', function(){ S.authMode = 'login'; renderAll(); });
+    $('createAcctBtn').addEventListener('click', createAccount);
+    ['newName','newSecret','newSecret2'].forEach(function(i){ onEnter(i, createAccount); });
+
+    $('backBtn').addEventListener('click', function(){ go(S.screen === 'newExp' ? 'trip' : 'list'); });
+    $('acctBtn').addEventListener('click', function(){ go('acct'); });
+    $('fab').addEventListener('click', function(){ go(S.screen === 'trip' ? 'newExp' : 'newTrip'); });
+    $('logoutBtn').addEventListener('click', logout);
+
+    $('tripList').addEventListener('click', function(ev){
+      var b = ev.target.closest('[data-open]'); if(b) go('trip', b.getAttribute('data-open'));
+    });
+
+    /* yeni gezi */
+    $('createTripBtn').addEventListener('click', createTrip); onEnter('newTripName', createTrip);
+    $('dSearch').addEventListener('input', function(){ S.dq = this.value; renderAll(); });
+    $('dResults').addEventListener('click', function(ev){
+      var b = ev.target.closest('[data-draft-add]'); if(!b) return;
+      var id = b.getAttribute('data-draft-add');
+      if(S.draft.indexOf(id) === -1) S.draft.push(id);
+      S.dq = ''; $('dSearch').value = ''; renderAll();
+    });
+    $('draftChips').addEventListener('click', function(ev){
+      var b = ev.target.closest('[data-draft-del]'); if(!b) return;
+      var id = b.getAttribute('data-draft-del');
+      S.draft = S.draft.filter(function(x){ return x !== id; }); renderAll();
+    });
+
+    /* gezi ayrıntısı */
+    $('members').addEventListener('click', function(ev){
+      var b = ev.target.closest('[data-del-member]'); if(b) removeMember(b.getAttribute('data-del-member'), false);
+    });
+    $('addToggle').addEventListener('click', function(){
+      S.showAdd = true; renderAll();
+      setTimeout(function(){ try{ $('memberSearch').focus(); }catch(e){} }, 30);
+    });
+    $('memberSearch').addEventListener('input', function(){ S.q = this.value; renderAll(); });
+    $('memberResults').addEventListener('click', function(ev){
+      var b = ev.target.closest('[data-add-member]'); if(b) addMember(b.getAttribute('data-add-member'));
+    });
+    $('expenses').addEventListener('click', function(ev){
+      var b = ev.target.closest('[data-del-exp]'); if(b) deleteExpense(b.getAttribute('data-del-exp'));
+    });
+    $('copyBtn').addEventListener('click', copySummary);
+    $('leaveBtn').addEventListener('click', function(){
+      confirmTwice('leave', this, 'Geziden ayrıl', 'Emin misin? Tekrar tıkla', function(){ removeMember(S.myId, true); });
+    });
+    $('deleteTripBtn').addEventListener('click', function(){
+      confirmTwice('del', this, 'Geziyi sil', 'Herkes için silinecek. Tekrar tıkla', deleteTrip);
+    });
+
+    /* yeni harcama */
+    $('addExpenseBtn').addEventListener('click', addExpense);
+    onEnter('desc', addExpense); onEnter('amount', addExpense);
+
+    /* hesap */
+    $('backupShowBtn').addEventListener('click', showBackup);
+    $('backupLoadBtn').addEventListener('click', function(){
+      confirmTwice('restore', this, 'Yedekten yükle', 'Mevcut veri silinir. Tekrar tıkla', restoreBackup);
+    });
+  }
+
+  /* ---------- Başlangıç ---------- */
+  bindEvents();
+  store.onChange(function(snap){
+    S.users = snap.users; S.trips = snap.trips; S.exps = snap.exps;
+    if(S.myId && !S.users[S.myId]){ S.myId = null; S.view = null; store.setSession(null); }
+    if(S.view && !curTrip() && (S.screen === 'trip' || S.screen === 'newExp')){ S.view = null; S.screen = 'list'; }
+    renderAll();
+  });
+  var saved = store.getSession();
+  if(saved && S.users[saved]) S.myId = saved;
+  renderAll();
+})();
+</script>
+</body>
+</html>
